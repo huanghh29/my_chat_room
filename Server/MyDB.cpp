@@ -2,6 +2,7 @@
 #include <iostream>
 using namespace std;
 
+
 MyDB::MyDB(){
     mysql = mysql_init(NULL);
     if(mysql==NULL){
@@ -10,11 +11,13 @@ MyDB::MyDB(){
     }
 }
 
+
 MyDB::~MyDB(){
     if(mysql!=NULL){
         mysql_close(mysql);
     }
 }
+
 
 bool MyDB::initDB(string host, string user, string password, string db_name){
     mysql = mysql_real_connect(mysql, host.c_str(), user.c_str(), password.c_str(), db_name.c_str(), 0, NULL, 0);
@@ -24,6 +27,7 @@ bool MyDB::initDB(string host, string user, string password, string db_name){
     }
     return true;
 }
+
 
 bool MyDB::exeSQL(string sql, int& affected_rows, MYSQL_RES* res){
     if(mysql_query(mysql,sql.c_str())){
@@ -47,13 +51,19 @@ bool MyDB::exeSQL(string sql, int& affected_rows, MYSQL_RES* res){
     return true;
 }
 
+
 MYSQL_RES* MyDB::exeSelectSQL(string sql){
     if(mysql_query(mysql, sql.c_str())){
         cout << "Query Error:" << mysql_error(mysql) << endl;
         return NULL;
     }
-    return mysql_store_result(mysql);
+    MYSQL_RES* result = mysql_store_result(mysql);
+    if(NULL==result){
+        cout << "Get result error: " << mysql_error(mysql);
+    }
+    return result;
 }
+
 
 int MyDB::exeOtherSQL(string sql){
     if(mysql_query(mysql, sql.c_str())){

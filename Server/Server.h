@@ -19,8 +19,7 @@ public:
 private:
     struct sockaddr_in server_addr;
     int sock_fd;
-    int epfd;
-    list<int> clients;
+    list<int> client_fds;
 };
 
 #endif

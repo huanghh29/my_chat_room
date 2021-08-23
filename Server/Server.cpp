@@ -3,10 +3,10 @@
 
 using namespace std;
 
-void* thread(int arg){
+void* thread(void* arg){
 
     char msg[BUF_SIZE];
-    int client_fd = arg;
+    int client_fd = (int)arg;
     ClientToUser.insert(pair<int, string>(client_fd, ""));
     // MessageType msg_type;
     char recv_buf[BUF_SIZE];
@@ -94,70 +94,65 @@ void* thread(int arg){
     return NULL;
 }
 
+
 Server::Server(){
-    memset(&server_addr, 0, sizeof(server_addr));
+    memset(&server_addr, 0, sizeof(struct sockaddr_in));
     server_addr.sin_family = AF_INET;
     server_addr.sinport = htons(SERVER_PORT);
     server_addr.sin_addr.s_addr = htol(INADDR_ANY);
     sock_fd = 0;
-    epfd = 0;       //no use
 }
+
 
 Server::~Server(){
-
+    Close();
 }
 
-Server::init(){
+
+void Server::Close(){
+    for(auto cliend_fd:client_fds){
+        close(cliend_fd);
+    }
+    close(sock_fd);
+}
+
+
+void Server::start(){
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(sock_fd < 0){
         cerr << "socket error" << endl;
-        exit(0);
+        exit(1);
     }
     int optval = 1;
     if(setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&optval, sizeof(int))<0){
         cerr << "setsockopt error" << endl;
-        exit(0);
+        exit(1);
     }
-    if(bind(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr))<0){
+    if(bind(sock_fd, (struct sockaddr*)&server_addr, sizeof(struct sockaddr))<0){
         cerr << "bind error" << endl;
-        exit(0);
+        exit(1);
     }
     if(listen(sock_fd, LISTEN_SIZE)<0){
         cerr << "listen error" << endl;
-        exit(0);
+        exit(1);
     }
-    epfd = epoll_create(EPOLL_SIZE);
-    if(epfd<0){
-        cerr << "epoll create error" << endl;
-        exit(0);
-    }
-    // addfd(epfd, sock_fd, true);
-}
-
-void Server::Close(){
-    close(sock_fd);
-    close(epfd);
-}
-
-void Server::start(){
-    static struct epoll_event events[EPOLL_SIZE];
-    init();
     while(1){
         struct sockaddr_in client_addr;
-        memset(&client_addr, 0, sizeof(client_addr));
+        memset(&client_addr, 0, sizeof(struct sockaddr_in));
         socklen_t client_addr_len = sizeof(struct sockaddr_in);
         int client_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_len);
         if(client_fd<0){
             cerr << "accept error" << endl;
             exit(0);
         }
-        clients.push_back(client_fd);
+        client_fds.push_back(client_fd);
         pthread_t pthread_id;
-        pthread_create(&pthread_id, NULL, thread, client_fd);
+        pthread_create(&pthread_id, NULL, thread, (void*)client_fd);
     }
 }
 
+
 void Server::ClientDisconnect(int client_fd){
     close(client_fd);
-    clients.remove(client_fd);
+    client_fds.remove(client_fd);
 }
