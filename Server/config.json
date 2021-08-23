@@ -1,0 +1,7 @@
+{
+    "port" : 8888,
+    "host" : "localhost",
+    "user" : "root",
+    "password" : "huan",
+    "database" : "chat_room"
+}
